@@ -22,7 +22,7 @@ class ClientSocketServer:
             # try to create a ip_address instance
             ip = ipaddress.ip_address(self.ip)
 
-            if isinstance(ip, Ipv4Address):
+            if isinstance(ip, ipaddress.Ipv4Address):
                 # return the ip_address instance
                 return True
 
@@ -69,18 +69,24 @@ class ClientSocketServer:
 
 def main():
     if len(sys.argv) >= 2:
+        print("Blank Line to write to a stdin")
         name = input("\nusername: ")
         client = ClientSocketServer(sys.argv[1])
-        client.connect() # no msg because this does not connect rip
-        try:
-            while True:
-                next_message = input("msg: ") # this is blocking, only because of a syscall
-                # shadow next_message to include name
-                next_message = f'{name}: {next_message}'
-                client.send(bytes(next_message, 'utf-8'))
-                next_message = None
-        except KeyboardInterrupt:
+        # this would allow us to reconnect not recursively
+        while True: # this is really jaank
+          client.connect() # no msg because this does not connect rip
+          try:
+              while True:
+                  print("") # stamp buffer
+                  next_message = input("") # this is blocking, only because of a syscall
+                  # shadow next_message to include name
+                  next_message = f'\n{name}: {next_message}'
+                  client.send(bytes(next_message, 'utf-8'))
+                  next_message = None
+          except KeyboardInterrupt:
             client.close()
+          except ConnectionResetError:
+            continue
         sys.exit(0)
     else:
         print("Enter a valid IP Address\n")
